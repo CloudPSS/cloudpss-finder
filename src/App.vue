@@ -7,7 +7,7 @@
 import { Component, Vue } from "vue-property-decorator";
 import axios from "axios";
 import { getUserIP } from "./get-user-ip";
-import 'ant-design-vue/dist/antd.css';
+import "ant-design-vue/dist/antd.css";
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const { ipcRenderer } = require("electron");
 
