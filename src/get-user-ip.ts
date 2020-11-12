@@ -1,4 +1,4 @@
-export async function getUserIP():Promise<string> {
+export async function getUserIP(): Promise<string> {
   //  onNewIp - your listener function for new IPs
   return new Promise(resolve => {
     //compatibility for firefox and chrome
@@ -12,10 +12,10 @@ export async function getUserIP():Promise<string> {
       noop = function() {
         //
       },
-      localIPs:any = {},
+      localIPs: any = {},
       ipRegex = /([0-9]{1,3}(\.[0-9]{1,3}){3}|[a-f0-9]{1,4}(:[a-f0-9]{1,4}){7})/g;
 
-    function iterateIP(ip:string) {
+    function iterateIP(ip: string) {
       if (!localIPs[ip]) resolve(ip);
       localIPs[ip] = true;
     }
@@ -25,11 +25,16 @@ export async function getUserIP():Promise<string> {
 
     // create offer and set local description
     pc.createOffer()
-      .then(function(sdp:any) {
-        sdp.sdp.split("\n").forEach(function(line: { indexOf: (arg0: string) => number; match: (arg0: RegExp) => string[]; }) {
-          if (line.indexOf("candidate") < 0) return;
-          line.match(ipRegex).forEach(iterateIP);
-        });
+      .then(function(sdp: any) {
+        sdp.sdp
+          .split("\n")
+          .forEach(function(line: {
+            indexOf: (arg0: string) => number;
+            match: (arg0: RegExp) => string[];
+          }) {
+            if (line.indexOf("candidate") < 0) return;
+            line.match(ipRegex).forEach(iterateIP);
+          });
 
         (pc.setLocalDescription as any)(sdp, noop, noop);
       })
