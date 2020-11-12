@@ -1,15 +1,15 @@
 "use strict";
 
-import { app, protocol, BrowserWindow } from "electron";
+import {app, protocol, BrowserWindow, IpcMainEvent} from "electron";
 import { createProtocol } from "vue-cli-plugin-electron-builder/lib";
 import installExtension, { VUEJS_DEVTOOLS } from "electron-devtools-installer";
-import path from 'path'
 const isDevelopment = process.env.NODE_ENV !== "production";
 
 // Scheme must be registered before the app is ready
 protocol.registerSchemesAsPrivileged([
   { scheme: "app", privileges: { secure: true, standard: true } }
 ]);
+
 
 async function createWindow() {
   // Create the browser window.
@@ -21,7 +21,6 @@ async function createWindow() {
       // See nklayman.github.io/vue-cli-plugin-electron-builder/guide/security.html#node-integration for more info
       nodeIntegration: (process.env
         .ELECTRON_NODE_INTEGRATION as unknown) as boolean,
-      preload: path.join(__dirname, 'preload.js')
     }
   });
 
@@ -81,3 +80,20 @@ if (isDevelopment) {
     });
   }
 }
+
+const { ipcMain } = require("electron");
+
+function openBrowser(url:string) {
+  // openBrowser("www.baidu.com");
+
+  require("electron")
+      .shell.openExternal(url)
+      .catch((e: Error) => {
+        throw e;
+      });
+}
+
+ipcMain.on("openBrowser", (event:IpcMainEvent, arg:string) => {
+  console.log("1111");
+  openBrowser(arg);
+});

@@ -7,8 +7,9 @@
 import { Component, Vue } from "vue-property-decorator";
 import axios from "axios";
 import { getUserIP } from "./get-user-ip";
+import "ant-design-vue/dist/antd.css";
 // eslint-disable-next-line @typescript-eslint/no-var-requires
-const electron = require("electron");
+const { ipcRenderer } = require("electron");
 
 @Component({})
 export default class App extends Vue {
@@ -28,6 +29,7 @@ export default class App extends Vue {
           .get(`http://${ip}:${port}/sign_in/`, { timeout: 5000 })
           .then(() => {
             console.log("已找到", ip, port);
+            ipcRenderer.sendSync("openBrowser", `http://${ip}:${port}`);
             resolve(true);
           })
           .catch(() => {
@@ -45,17 +47,16 @@ export default class App extends Vue {
   }
 
   async mounted(): Promise<void> {
-    electron.ipcRenderer.sendSync("openBrowser", "http://www.baidu.com");
-    // const addressList = new Array<number>();
-    // for (let i = 1; i <= 255; i++) {
-    //   addressList.push(i);
-    // }
-    // const addressPool = (await getUserIP()).slice(0, 10);
-    // await Promise.all(
-    //   addressList.map(address =>
-    //     this.portScanner(`${addressPool}${address}`, 80)
-    //   )
-    // );
+    const addressList = new Array<number>();
+    for (let i = 1; i <= 255; i++) {
+      addressList.push(i);
+    }
+    const addressPool = (await getUserIP()).slice(0, 10);
+    await Promise.all(
+      addressList.map(address =>
+        this.portScanner(`${addressPool}${address}`, 80)
+      )
+    );
   }
 }
 </script>
