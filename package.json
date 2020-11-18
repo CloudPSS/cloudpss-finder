@@ -16,6 +16,7 @@
     "ant-design-vue": "^1.7.2",
     "axios": "^0.21.0",
     "core-js": "^3.6.5",
+    "nprogress": "^0.2.0",
     "shell": "^0.5.0",
     "vue": "^2.6.11",
     "vue-class-component": "^7.2.3",
@@ -25,6 +26,7 @@
   },
   "devDependencies": {
     "@types/electron-devtools-installer": "^2.2.0",
+    "@types/nprogress": "^0.2.0",
     "@typescript-eslint/eslint-plugin": "^2.33.0",
     "@typescript-eslint/parser": "^2.33.0",
     "@vue/cli-plugin-babel": "~4.5.0",

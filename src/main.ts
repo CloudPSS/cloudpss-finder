@@ -13,7 +13,9 @@ import {
   Icon,
   Card,
   Tooltip,
-  Modal
+  Modal,
+    List,
+    Select,
 } from "ant-design-vue";
 Vue.config.productionTip = false;
 Vue.use(Button);
@@ -26,6 +28,8 @@ Vue.use(Icon);
 Vue.use(Card);
 Vue.use(Tooltip);
 Vue.use(Modal);
+Vue.use(List);
+Vue.use(Select);
 Vue.prototype.$message = message;
 Vue.prototype.$confirm = Modal.confirm;
 Vue.prototype.$success = Modal.success;
