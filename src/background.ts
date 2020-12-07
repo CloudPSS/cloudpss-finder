@@ -3,8 +3,9 @@
 import { app, protocol, BrowserWindow, Menu } from "electron";
 import { createProtocol } from "vue-cli-plugin-electron-builder/lib";
 import installExtension, { VUEJS_DEVTOOLS } from "electron-devtools-installer";
-import os from 'os'
-import { ipcMain } from 'electron'
+import os from "os";
+import { ipcMain } from "electron";
+import { execAsyncSystemCommand } from "@/utils/exec-system-command";
 const isDevelopment = process.env.NODE_ENV !== "production";
 
 // Scheme must be registered before the app is ready
@@ -17,7 +18,7 @@ async function createWindow() {
   const win = new BrowserWindow({
     width: 800,
     height: 600,
-    resizable:false,
+    resizable: false,
     webPreferences: {
       // Use pluginOptions.nodeIntegration, leave this alone
       // See nklayman.github.io/vue-cli-plugin-electron-builder/guide/security.html#node-integration for more info
@@ -85,6 +86,14 @@ if (isDevelopment) {
   }
 }
 
-ipcMain.on('getNetworkInterfaces', (event) => {
-  event.reply('returnNetworkInterfaces',os.networkInterfaces())
-})
+ipcMain.on("getNetworkInterfaces", event => {
+  event.reply("returnNetworkInterfaces", os.networkInterfaces());
+});
+
+ipcMain.on("getMac", async (event, arg) => {
+  const result = (await execAsyncSystemCommand(` arp -a ${arg}`)).toString(
+    "utf-8"
+  );
+  console.log(result);
+  event.reply("returnMac", result);
+});

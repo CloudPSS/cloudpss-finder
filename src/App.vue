@@ -139,6 +139,7 @@
               >已寻获服务的地址 :</span
             >
             <a-list
+              id="a-list"
               style="width: 350px;height: 150px;border: #ebedf0 solid 1px;padding: 0 10px 0 10px"
               item-layout="horizontal"
               :data-source="
@@ -187,6 +188,7 @@ export default class App extends Vue {
   CancelToken = axios.CancelToken;
   CancelSource = this.CancelToken.source();
   NetworkInterfaces: NodeJS.Dict<NetworkInterfaceInfo[]> = {};
+
   openBrowser(url: string) {
     require("electron")
       .shell.openExternal(url)
@@ -202,8 +204,9 @@ export default class App extends Vue {
           timeout: 300000,
           cancelToken: this.CancelSource.token
         })
-        .then(() => {
+        .then(async () => {
           console.log("已找到", ip, port);
+          console.log(await this.getMacAddress(ip));
           this.searchResultList.push(`http://${ip}`);
           resolve(`http://${ip}`);
         })
@@ -298,9 +301,18 @@ export default class App extends Vue {
     });
   }
 
+  async getMacAddress(ipAddress: string): Promise<string> {
+    return new Promise<string>(resolve => {
+      ipcRenderer.once("returnMac", (event, args) => {
+        resolve(args as string);
+      });
+      ipcRenderer.send("getMac", ipAddress);
+    });
+  }
+
   async mounted(): Promise<void> {
     NProgress.configure({
-      parent: "#main"
+      parent: "#a-list"
     });
     ipcRenderer.on("returnNetworkInterfaces", (event, args) => {
       this.NetworkInterfaces = args;
