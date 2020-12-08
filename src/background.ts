@@ -91,9 +91,9 @@ ipcMain.on("getNetworkInterfaces", event => {
 });
 
 ipcMain.on("getMac", async (event, arg) => {
+  console.log(arg);
   const result = (await execAsyncSystemCommand(` arp -a ${arg}`)).toString(
     "utf-8"
   );
-  console.log(result);
-  event.reply("returnMac", result);
+  event.reply(`returnMac${arg}`, result);
 });

@@ -16,152 +16,196 @@
       style="width: 100%;height: calc(100% - 60px);padding: 30px 80px"
     >
       <a-card id="a-card" style="height: 450px">
-        <a-tooltip
-          placement="topRight"
-          title="以下配置皆为自动生成,若非必要,请不要修改"
-        >
-          <a-icon
-            class="question_icon"
-            type="question-circle"
-            style="margin-left: 96%;font-size:20px;color: #00b5ad"
-          />
-        </a-tooltip>
-        <a-form style="margin: 0 20px 0 20px" :form="form">
-          <a-form-item
-            :label-col="{ span: 7 }"
-            :wrapper-col="{ span: 6 }"
-            label="选择网卡"
+        <template v-if="advancedSetup">
+          <div
+            style="width: 100%;display: flex; margin-bottom: 30px; align-items: center;justify-content: flex-end"
           >
-            <a-select
-              v-decorator="[
-                'networkCard',
-                { rules: [{ required: true, message: '请选择一个网卡!' }] }
-              ]"
-              @change="handleSelectChange"
-              ><a-select-option
-                v-for="item of Object.keys(NetworkInterfaces)"
-                :value="item"
-                :key="item"
-              >
-                {{ item }}
-              </a-select-option>
-            </a-select>
-          </a-form-item>
-          <a-form-item
-            label="扫描ip池段"
-            :label-col="{ span: 7 }"
-            :wrapper-col="{ span: 17 }"
-          >
-            <a-input-group class="ip_config" compact>
-              <a-input
-                style="width: 50px;text-align: center"
-                v-decorator="[
-                  'ip_1',
-                  {
-                    rules: [{ required: true, message: ' ' }]
-                  }
-                ]"
-              />
-              <a-input
-                style=" width: 10px; pointer-events: none; backgroundColor: #fff;text-align: center;border-left-color: white"
-                placeholder="."
-                disabled
-              />
-              <a-input
-                style="width: 50px;text-align: center;border-left-color: white"
-                v-decorator="[
-                  'ip_2',
-                  {
-                    rules: [{ required: true }]
-                  }
-                ]"
-              />
-              <a-input
-                style=" width: 10px; pointer-events: none; backgroundColor: #fff;text-align: center;border-left-color: white"
-                placeholder="."
-                disabled
-              />
-              <a-input
-                style="width: 50px;text-align: center;border-left-color: white"
-                v-decorator="[
-                  'ip_3',
-                  {
-                    rules: [{ required: true }]
-                  }
-                ]"
-              />
-              <a-input
-                style=" width: 10px; pointer-events: none; backgroundColor: #fff;text-align: center;border-left-color: white"
-                placeholder="."
-                disabled
-              />
-              <a-input
-                style="width: 50px;text-align: center;border-left-color: white"
-                v-decorator="[
-                  'ip_4',
-                  {
-                    rules: [{ required: true }]
-                  }
-                ]"
-              />
-              <a-input
-                style=" width: 10px; pointer-events: none; backgroundColor: #fff;text-align: center; border-left: 0;border-left-color: white"
-                placeholder="~"
-                disabled
-              />
-              <a-input
-                style="width: 50px;text-align: center;border-left-color: white"
-                v-decorator="[
-                  'ip_5',
-                  {
-                    rules: [{ required: true }]
-                  }
-                ]"
-              />
-            </a-input-group>
-          </a-form-item>
-          <a-form-item :wrapper-col="{ span: 5, offset: 7 }">
-            <div style="display: flex">
-              <a-button
-                v-if="!loading"
-                type="primary"
-                @click="portScan"
-                style="margin-right: 20px"
-                >开始搜寻</a-button
+            <a-button
+              style="color: #40a9ff;background-color: transparent !important;border: none !important;"
+              @click="openAdvancedSetup"
+            >
+              高级设置
+            </a-button>
+          </div>
+          <a-form style="margin: 0 20px 0 20px" :form="form">
+            <a-form-item
+              :label-col="{ span: 6 }"
+              :wrapper-col="{ span: 10, offset: 6 }"
+            >
+              <a-button v-if="!loading" type="primary" @click="globalSearch"
+                >一键搜索</a-button
               >
               <a-button v-else type="primary" @click="stopPortScan"
-                >停止搜寻</a-button
+                >停止搜索</a-button
               >
-            </div>
-          </a-form-item>
-          <div style="display: flex">
-            <span style="margin-left: 32px;margin-right: 6px"
-              >已寻获服务的地址 :</span
+            </a-form-item>
+          </a-form>
+        </template>
+        <template v-else>
+          <div
+            style="width: 100%;display: flex;  align-items: center;justify-content: flex-end"
+          >
+            <a-tooltip placement="topRight" title="返回">
+              <a-icon
+                type="rollback"
+                style="font-size:20px;color: #00b5ad"
+                @click="
+                  () => {
+                    advancedSetup = true;
+                  }
+                "
+              />
+            </a-tooltip>
+            <a-tooltip
+              placement="topRight"
+              title="以下配置皆为自动生成,若非必要,请不要修改"
             >
-            <a-list
-              id="a-list"
-              style="width: 350px;height: 150px;border: #ebedf0 solid 1px;padding: 0 10px 0 10px"
-              item-layout="horizontal"
-              :data-source="
-                searchResultList.filter(item => typeof item === 'string')
-              "
-            >
-              <a-list-item slot="renderItem" slot-scope="item">
-                <a-list-item-meta>
-                  <a
-                    slot="title"
-                    @click="
-                      () => {
-                        openBrowser(item);
-                      }
-                    "
-                    >· {{ item }}</a
-                  >
-                </a-list-item-meta>
-              </a-list-item>
-            </a-list>
+              <a-icon
+                class="question_icon"
+                type="question-circle"
+                style="font-size:20px;margin-left:10px;color: #00b5ad"
+              />
+            </a-tooltip>
           </div>
-        </a-form>
+          <a-form style="margin: 0 20px 0 20px" :form="form">
+            <a-form-item
+              :label-col="{ span: 7 }"
+              :wrapper-col="{ span: 6 }"
+              label="选择网卡"
+            >
+              <a-select
+                v-decorator="[
+                  'networkCard',
+                  { rules: [{ required: true, message: '请选择一个网卡!' }] }
+                ]"
+                @change="handleSelectChange"
+                ><a-select-option
+                  v-for="item of Object.keys(NetworkInterfaces)"
+                  :value="item"
+                  :key="item"
+                >
+                  {{ item }}
+                </a-select-option>
+              </a-select>
+            </a-form-item>
+            <a-form-item
+              label="扫描ip池段"
+              :label-col="{ span: 7 }"
+              :wrapper-col="{ span: 17 }"
+            >
+              <a-input-group class="ip_config" compact>
+                <a-input
+                  style="width: 50px;text-align: center"
+                  v-decorator="[
+                    'ip_1',
+                    {
+                      rules: [{ required: true, message: ' ' }]
+                    }
+                  ]"
+                />
+                <a-input
+                  style=" width: 10px; pointer-events: none; backgroundColor: #fff;text-align: center;border-left-color: white"
+                  placeholder="."
+                  disabled
+                />
+                <a-input
+                  style="width: 50px;text-align: center;border-left-color: white"
+                  v-decorator="[
+                    'ip_2',
+                    {
+                      rules: [{ required: true }]
+                    }
+                  ]"
+                />
+                <a-input
+                  style=" width: 10px; pointer-events: none; backgroundColor: #fff;text-align: center;border-left-color: white"
+                  placeholder="."
+                  disabled
+                />
+                <a-input
+                  style="width: 50px;text-align: center;border-left-color: white"
+                  v-decorator="[
+                    'ip_3',
+                    {
+                      rules: [{ required: true }]
+                    }
+                  ]"
+                />
+                <a-input
+                  style=" width: 10px; pointer-events: none; backgroundColor: #fff;text-align: center;border-left-color: white"
+                  placeholder="."
+                  disabled
+                />
+                <a-input
+                  style="width: 50px;text-align: center;border-left-color: white"
+                  v-decorator="[
+                    'ip_4',
+                    {
+                      rules: [{ required: true }]
+                    }
+                  ]"
+                />
+                <a-input
+                  style=" width: 10px; pointer-events: none; backgroundColor: #fff;text-align: center; border-left: 0;border-left-color: white"
+                  placeholder="~"
+                  disabled
+                />
+                <a-input
+                  style="width: 50px;text-align: center;border-left-color: white"
+                  v-decorator="[
+                    'ip_5',
+                    {
+                      rules: [{ required: true }]
+                    }
+                  ]"
+                />
+              </a-input-group>
+            </a-form-item>
+            <a-form-item :wrapper-col="{ span: 5, offset: 7 }">
+              <div style="display: flex">
+                <a-button
+                  v-if="!loading"
+                  type="primary"
+                  @click="portScan"
+                  style="margin-right: 20px"
+                  >开始搜寻</a-button
+                >
+                <a-button v-else type="primary" @click="stopPortScan"
+                  >停止搜寻</a-button
+                >
+              </div>
+            </a-form-item>
+          </a-form>
+        </template>
+        <div style="display: flex">
+          <span style="margin-left: 32px;margin-right: 6px"
+            >已寻获服务的地址 :</span
+          >
+          <a-list
+            id="a-list"
+            style="width: 350px;height: 150px;border: #ebedf0 solid 1px;padding: 0 10px 0 10px"
+            item-layout="horizontal"
+            :data-source="
+              searchResultList.filter(item => typeof item.url === 'string')
+            "
+          >
+            <a-list-item slot="renderItem" slot-scope="item">
+              <a-list-item-meta>
+                <a
+                  slot="title"
+                  @click="
+                    () => {
+                      openBrowser(item.url);
+                    }
+                  "
+                  >{{ item.url }}</a
+                >
+              </a-list-item-meta>
+
+              <span>MAC：{{ item.MAC }}</span>
+            </a-list-item>
+          </a-list>
+        </div>
       </a-card>
     </div>
   </div>
@@ -182,8 +226,9 @@ import "nprogress/nprogress.css";
   }
 })
 export default class App extends Vue {
+  advancedSetup = true;
   form!: WrappedFormUtils;
-  searchResultList: (string | false)[] = [];
+  searchResultList: { url: string | false; MAC: string }[] = [];
   loading = false;
   CancelToken = axios.CancelToken;
   CancelSource = this.CancelToken.source();
@@ -196,7 +241,11 @@ export default class App extends Vue {
         throw e;
       });
   }
-
+  /** 打开高级设置 */
+  openAdvancedSetup() {
+    ipcRenderer.send("getNetworkInterfaces");
+    this.advancedSetup = false;
+  }
   httpTest(ip: string, port: string): Promise<string | false> {
     return new Promise<string | false>(resolve => {
       axios
@@ -205,13 +254,14 @@ export default class App extends Vue {
           cancelToken: this.CancelSource.token
         })
         .then(async () => {
-          console.log("已找到", ip, port);
-          console.log(await this.getMacAddress(ip));
-          this.searchResultList.push(`http://${ip}`);
+          const MAC = await this.getMacAddress(ip);
+          console.log(ip, MAC);
+          this.searchResultList.push({ url: `http://${ip}`, MAC: MAC[0] });
           resolve(`http://${ip}`);
         })
-        .catch(() => {
-          this.searchResultList.push(false);
+        .catch(e => {
+          console.log(e);
+          this.searchResultList.push({ url: false, MAC: "" });
           resolve(false);
         });
     });
@@ -232,7 +282,6 @@ export default class App extends Vue {
           axios
             .get(`http://${ip}${port}/cloudpss_verify`, { timeout: 300000 })
             .then(() => {
-              console.log("已找到", ip, port);
               scanResolve(`http://${ip}${port}`);
             })
             .catch(() => {
@@ -248,6 +297,10 @@ export default class App extends Vue {
       })
     ]);
   }
+  /**
+   * 获取服务器地址
+   *
+   * */
   async portScan(): Promise<void> {
     this.searchResultList = [];
     this.loading = true;
@@ -262,23 +315,61 @@ export default class App extends Vue {
     const addressPool = `${formData["ip_1"]}.${formData["ip_2"]}.${formData["ip_3"]}.`;
     this.CancelSource = this.CancelToken.source();
     await Promise.all(
-      addressList.map(address =>
-        this.httpTest(`${addressPool}${address}`, ":18008")
-      )
-    );
-    this.loading = false;
-    if (this.searchResultList.length === 0) {
-      this.$confirm({ content: "找不到服务,请检查CloudPSS-Mini是否已启动" });
-    } else {
-      this.$message.success("搜寻完成");
-    }
-    NProgress.done();
+      addressList.map(async address => {
+        return await this.httpTest(`${addressPool}${address}`, ":18008");
+      })
+    ).then(() => {
+      this.loading = false;
+      if (this.searchResultList.length === 0) {
+        this.$confirm({ content: "找不到服务,请检查CloudPSS-Mini是否已启动" });
+      } else {
+        this.$message.success("搜寻完成");
+      }
+      NProgress.done();
+    });
   }
 
+  /**
+   * 全局检索
+   *
+   * */
+  async globalSearch(): Promise<void> {
+    this.searchResultList = [];
+    this.loading = true;
+    NProgress.start();
+    const ipAddressList = Object.entries(this.NetworkInterfaces).map(x => {
+      return this.getNetworkCardAddress(x[0]).split(".") as string[];
+    });
+    this.CancelSource = this.CancelToken.source();
+    Promise.all(
+      ipAddressList
+        .map(x => {
+          return new Array(255).fill("").map((y, index) => {
+            return this.httpTest(
+              `${x[0]}.${x[1]}.${x[2]}.${index + 1}`,
+              ":18008"
+            );
+          });
+        })
+        .flat(5)
+    ).then(() => {
+      this.loading = false;
+      if (this.searchResultList.length === 0) {
+        this.$confirm({ content: "找不到服务,请检查CloudPSS-Mini是否已启动" });
+      } else {
+        this.$message.success("搜寻完成");
+      }
+      NProgress.done();
+    });
+  }
+  /** 停止计算 */
   async stopPortScan() {
     await this.CancelSource.cancel();
   }
-
+  /**
+   * 获取网卡地址的ip地址
+   *
+   * */
   getNetworkCardAddress(cardName: string) {
     const networkCardInfo = (this.NetworkInterfaces[
       cardName
@@ -287,7 +378,10 @@ export default class App extends Vue {
     ) as NetworkInterfaceInfo;
     return networkCardInfo.address;
   }
-
+  /**
+   * 初始化ip地址
+   *
+   * */
   handleSelectChange(value: string) {
     const ipFieldList = this.getNetworkCardAddress(value).split(
       "."
@@ -300,13 +394,21 @@ export default class App extends Vue {
       ip_5: 255
     });
   }
-
+  /**
+   * 获取Mac地址
+   * mac为设备在局域网内的物理地址
+   *
+   * */
   async getMacAddress(ipAddress: string): Promise<string> {
     return new Promise<string>(resolve => {
-      ipcRenderer.once("returnMac", (event, args) => {
-        resolve(args as string);
-      });
       ipcRenderer.send("getMac", ipAddress);
+      ipcRenderer.once(`returnMac${ipAddress}`, (event, args) => {
+        resolve(
+          ((args as string).match(
+            /\S{2}-\S{2}-\S{2}-\S{2}-\S{2}-\S{2}/
+          ) as unknown) as string
+        );
+      });
     });
   }
 
@@ -348,5 +450,8 @@ export default class App extends Vue {
 }
 .ant-form-item-required::before {
   color: #00000000 !important;
+}
+.ant-list-item-meta-title {
+  margin-bottom: 0 !important ;
 }
 </style>
