@@ -1,12 +1,23 @@
 "use strict";
 
-import { app, protocol, BrowserWindow, Menu } from "electron";
-import { createProtocol } from "vue-cli-plugin-electron-builder/lib";
+import { BrowserWindow, Menu, app, protocol } from "electron";
 import installExtension, { VUEJS_DEVTOOLS } from "electron-devtools-installer";
-import os from "os";
-import { ipcMain } from "electron";
+import os, { NetworkInterfaceInfo } from "os";
+
+import { createProtocol } from "vue-cli-plugin-electron-builder/lib";
+import dgram from "dgram";
 import { execAsyncSystemCommand } from "@/utils/exec-system-command";
+import { ipcMain } from "electron";
+
 const isDevelopment = process.env.NODE_ENV !== "production";
+/** 主服务器地址 */
+const multicastIp = "239.114.51.4";
+/**创建socket连接 */
+const socketServer = dgram.createSocket("udp4");
+// socketServer.bind(8848, () => {
+//   socketServer.addMembership(multicastIp, localIp);
+//   socketServer.addMembership(multicastIp, vpnIp);
+// });
 
 // Scheme must be registered before the app is ready
 protocol.registerSchemesAsPrivileged([
@@ -85,10 +96,32 @@ if (isDevelopment) {
     });
   }
 }
-
 ipcMain.on("getNetworkInterfaces", event => {
-  event.reply("returnNetworkInterfaces", os.networkInterfaces());
+  // event.reply("returnNetworkInterfaces", os.networkInterfaces());
+  const args =  os.networkInterfaces();
+  let ipList:string[] = [];
+  for (const key in args) {
+    const ip = ((args[key] as NetworkInterfaceInfo[] ).find(
+      item => item.family === "IPv4"
+    ) as os.NetworkInterfaceInfoIPv4).address
+    ;
+    ipList.push(ip)
+  }
+  socketServer.bind(8848, () => {
+    ipList.forEach(x=>{
+      socketServer.addMembership(multicastIp,x);
+    })
+  
+  });
+  socketServer.on("message", (msg, remoteInfo) => {
+    console.log(`ip:${remoteInfo.address}`, msg.toString());
+    event.reply("returnNetworkInterfaces", {ip:remoteInfo.address,...JSON.parse(msg.toString())});
+  });
+  console.log(args);
+  
 });
+
+
 
 ipcMain.on("getMac", async (event, arg) => {
   console.log(arg);
