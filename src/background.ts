@@ -112,7 +112,6 @@ ipcMain.on("getNetworkInterfaces", event => {
       socketServer.addMembership(multicastIp, x);
     });
   });
-  let num = 0;
   //老版本的主动请求,只能拿到ip信息
   ipList.forEach(ip => {
     const regTest = /^\d+\.\d+\.\d+\./.exec(ip);
@@ -130,7 +129,7 @@ ipcMain.on("getNetworkInterfaces", event => {
                 ip: testIp
               });
             })
-            .catch(e => console.log(num++));
+            .catch(e => e);
         }
       }, 5000);
     }
