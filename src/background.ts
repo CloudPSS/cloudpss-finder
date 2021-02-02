@@ -8,6 +8,7 @@ import { createProtocol } from "vue-cli-plugin-electron-builder/lib";
 import dgram from "dgram";
 import { execAsyncSystemCommand } from "@/utils/exec-system-command";
 import { ipcMain } from "electron";
+import axios from "axios";
 
 const isDevelopment = process.env.NODE_ENV !== "production";
 /** 主服务器地址 */
@@ -69,14 +70,14 @@ app.on("activate", () => {
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
 app.on("ready", async () => {
-  if (isDevelopment && !process.env.IS_TEST) {
-    // Install Vue Devtools
-    try {
-      await installExtension(VUEJS_DEVTOOLS);
-    } catch (e) {
-      console.error("Vue Devtools failed to install:", e.toString());
-    }
-  }
+  // if (isDevelopment && !process.env.IS_TEST) {
+  //   // Install Vue Devtools
+  //   try {
+  //     await installExtension(VUEJS_DEVTOOLS);
+  //   } catch (e) {
+  //     console.error("Vue Devtools failed to install:", e.toString());
+  //   }
+  // }
   createWindow();
 });
 
@@ -98,30 +99,50 @@ if (isDevelopment) {
 }
 ipcMain.on("getNetworkInterfaces", event => {
   // event.reply("returnNetworkInterfaces", os.networkInterfaces());
-  const args =  os.networkInterfaces();
-  let ipList:string[] = [];
+  const args = os.networkInterfaces();
+  const ipList: string[] = [];
   for (const key in args) {
-    const ip = ((args[key] as NetworkInterfaceInfo[] ).find(
+    const ip = ((args[key] as NetworkInterfaceInfo[]).find(
       item => item.family === "IPv4"
-    ) as os.NetworkInterfaceInfoIPv4).address
-    ;
-    ipList.push(ip)
+    ) as os.NetworkInterfaceInfoIPv4).address;
+    ipList.push(ip);
   }
   socketServer.bind(8848, () => {
-    ipList.forEach(x=>{
-      socketServer.addMembership(multicastIp,x);
-    })
-  
+    ipList.forEach(x => {
+      socketServer.addMembership(multicastIp, x);
+    });
   });
+  let num = 0;
+  //老版本的主动请求,只能拿到ip信息
+  ipList.forEach(ip => {
+    const regTest = /^\d+\.\d+\.\d+\./.exec(ip);
+    if (regTest != null) {
+      const prefixIp = regTest[0];
+      setInterval(() => {
+        for (let i = 1; i <= 255; i++) {
+          const testIp = prefixIp + i;
+          axios
+            .get(`http://${testIp}:18008/cloudpss_verify`, {
+              timeout: 5000
+            })
+            .then(() => {
+              event.reply("returnNetworkInterfaces", {
+                ip: testIp
+              });
+            })
+            .catch(e => console.log(num++));
+        }
+      }, 5000);
+    }
+  });
+  //新版本的被动接收
   socketServer.on("message", (msg, remoteInfo) => {
-    console.log(`ip:${remoteInfo.address}`, msg.toString());
-    event.reply("returnNetworkInterfaces", {ip:remoteInfo.address,...JSON.parse(msg.toString())});
+    event.reply("returnNetworkInterfaces", {
+      ip: remoteInfo.address,
+      ...JSON.parse(msg.toString())
+    });
   });
-  console.log(args);
-  
 });
-
-
 
 ipcMain.on("getMac", async (event, arg) => {
   console.log(arg);

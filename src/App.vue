@@ -16,7 +16,16 @@
       style="width: 100%;height: calc(100% - 60px);padding: 30px 80px"
     >
       <a-card id="a-card" style="height: 450px">
-        <a-button type="primary" style="margin-bottom: 10px;float: right;" @click="()=>{searchResultList = []}">刷新</a-button>
+        <a-button
+          type="primary"
+          style="margin-bottom: 10px;float: right;"
+          @click="
+            () => {
+              searchResultList = [];
+            }
+          "
+          >刷新</a-button
+        >
         <div style="display: flex">
           <span style="margin-left: 32px;margin-right: 6px"
             >已寻获服务的地址 :</span
@@ -25,9 +34,7 @@
             id="a-list"
             style="width: 350px;height: 350px;border: #ebedf0 solid 1px;padding: 0 10px 0 10px;overflow: auto"
             item-layout="horizontal"
-            :data-source="
-               searchResultList
-            "
+            :data-source="searchResultList"
           >
             <a-list-item slot="renderItem" slot-scope="item">
               <a-list-item-meta>
@@ -42,7 +49,7 @@
                 >
               </a-list-item-meta>
 
-              <span>MAC：{{ item.MAC }}</span>
+              <span v-if="item.type != null">节点类型：{{ item.type }}</span>
             </a-list-item>
           </a-list>
         </div>
@@ -60,11 +67,11 @@ import { NetworkInterfaceInfo } from "os";
 import NProgress from "nprogress";
 import "nprogress/nprogress.css";
 import dgram from "dgram";
-import { uniqBy } from 'lodash';
+import { uniqBy } from "lodash";
 /**
  *设备信息
  */
- interface CloudPSSEquipmentInfo {
+interface CloudPSSEquipmentInfo {
   /**
    *主板BIOS ID
    */
@@ -73,7 +80,7 @@ import { uniqBy } from 'lodash';
    *web服务状态
    */
   serverStatus: {
-    type: 'Parent' | 'Child';
+    type: "Parent" | "Child";
     parentEquipmentAddress: string;
   };
   /**
@@ -81,11 +88,11 @@ import { uniqBy } from 'lodash';
    */
   CloudPSSVersion: string;
 }
- type ipArgs = {ip:string} & CloudPSSBroadcastInfo
+type ipArgs = { ip: string } & CloudPSSBroadcastInfo;
 /**
  *广播信息
  */
- interface CloudPSSBroadcastInfo {
+interface CloudPSSBroadcastInfo {
   /**
    *设备信息
    */
@@ -102,17 +109,22 @@ import { uniqBy } from 'lodash';
   }
 })
 export default class App extends Vue {
-  uniqBy =uniqBy;
+  uniqBy = uniqBy;
   advancedSetup = true;
   form!: WrappedFormUtils;
-  searchResultList: { url: string | false; MAC: string,TTL: number }[] = [];
+  searchResultList: {
+    url: string | false;
+    MAC: string;
+    TTL: number;
+    type: string;
+  }[] = [];
   loading = false;
   CancelToken = axios.CancelToken;
   CancelSource = this.CancelToken.source();
   NetworkInterfaces: NodeJS.Dict<NetworkInterfaceInfo[]> = {};
 
   openBrowser(url: string) {
-    console.log(url)
+    console.log(url);
     require("electron")
       .shell.openExternal(`http://${url}`)
       .catch((e: Error) => {
@@ -176,24 +188,30 @@ export default class App extends Vue {
       parent: "#a-list"
     });
     ipcRenderer.send("getNetworkInterfaces");
-    ipcRenderer.on('returnNetworkInterfaces',(event,args:ipArgs)=>{
+    ipcRenderer.on("returnNetworkInterfaces", (event, args: ipArgs) => {
+      console.log(args);
       const ip = args.ip;
       const mac = args.macAddress;
       const TTL = 0;
-      if(this.searchResultList.findIndex(x=>x.url === ip) != -1 ){
-         this.searchResultList[this.searchResultList.findIndex(x=>x.url === ip)].TTL = 0
-      }
-      else this.searchResultList.push({url:ip,MAC:mac,TTL:TTL})
+      const type = args?.equipmentInfo?.serverStatus?.type;
+      if (this.searchResultList.findIndex(x => x.url === ip) != -1) {
+        const searchResult = this.searchResultList.find(x => x.url === ip);
+        if (searchResult != null) {
+          searchResult.TTL = 0;
+          searchResult.MAC = mac ?? searchResult.MAC;
+          searchResult.type = type ?? searchResult.type;
+        }
+      } else
+        this.searchResultList.push({ url: ip, MAC: mac, TTL: TTL, type: type });
     });
-     setInterval(()=>{
-     this.searchResultList = this.searchResultList.map(x=>{
-       x.TTL ++
-       return x
-     }).filter(x=>x.TTL < 5)
-   
-     }
-     ,1000)
-   
+    setInterval(() => {
+      this.searchResultList = this.searchResultList
+        .map(x => {
+          x.TTL++;
+          return x;
+        })
+        .filter(x => x.TTL < 20);
+    }, 1000);
   }
 }
 </script>
