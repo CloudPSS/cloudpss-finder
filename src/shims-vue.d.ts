@@ -3,4 +3,5 @@ declare module "*.vue" {
   export default Vue;
 }
 
-declare module 'lodash'
+declare module "lodash";
+declare module "@ispa.io/vrcode";

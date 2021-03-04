@@ -14,8 +14,9 @@ import {
   Card,
   Tooltip,
   Modal,
-    List,
-    Select,
+  List,
+  Select,
+  Table
 } from "ant-design-vue";
 Vue.config.productionTip = false;
 Vue.use(Button);
@@ -30,6 +31,7 @@ Vue.use(Tooltip);
 Vue.use(Modal);
 Vue.use(List);
 Vue.use(Select);
+Vue.use(Table);
 Vue.prototype.$message = message;
 Vue.prototype.$confirm = Modal.confirm;
 Vue.prototype.$success = Modal.success;

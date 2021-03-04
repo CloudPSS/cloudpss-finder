@@ -26,35 +26,54 @@
           "
           >刷新</a-button
         >
-        <div style="display: flex">
+        <div>
           <span style="margin-left: 32px;margin-right: 6px"
             >已寻获服务的地址 :</span
           >
-          <a-list
-            id="a-list"
-            style="width: 350px;height: 350px;border: #ebedf0 solid 1px;padding: 0 10px 0 10px;overflow: auto"
-            item-layout="horizontal"
+          <a-table
+            :columns="tableHerderList"
             :data-source="searchResultList"
+            size="small"
+            :pagination="false"
+            :scroll="{ y: 290 }"
           >
-            <a-list-item slot="renderItem" slot-scope="item">
-              <a-list-item-meta>
-                <a
-                  slot="title"
-                  @click="
-                    () => {
-                      openBrowser(item.url);
-                    }
-                  "
-                  >{{ item.url }}</a
-                >
-              </a-list-item-meta>
-
-              <span v-if="item.type != null">节点类型：{{ item.type }}</span>
-            </a-list-item>
-          </a-list>
+            <a
+              slot="ip"
+              slot-scope="text"
+              @click="
+                () => {
+                  openBrowser(text);
+                }
+              "
+              >{{ text }}</a
+            >
+            <span slot="operation" slot-scope="text, record">
+              <a-button
+                style="margin-right: 10px"
+                size="small"
+                type="primary"
+                @click="openVpn(record)"
+                :loading="record.loading"
+                >开启vpn</a-button
+              >
+              <a-button
+                @click="closeVpn(record)"
+                :loading="record.loading"
+                size="small"
+                type="primary"
+                >关闭vpn</a-button
+              >
+            </span>
+          </a-table>
         </div>
       </a-card>
     </div>
+    <a-modal style="width: 300px" v-model="modelShow" @ok="modelShow = false"
+      ><vrcode
+        style="display: flex;justify-content:center"
+        :value="JSON.stringify({ test: 'test' })"
+        :options="{ size: 200, level: 'Q' }"
+    /></a-modal>
   </div>
 </template>
 <script lang="ts">
@@ -66,8 +85,8 @@ import { ipcRenderer } from "electron";
 import { NetworkInterfaceInfo } from "os";
 import NProgress from "nprogress";
 import "nprogress/nprogress.css";
-import dgram from "dgram";
 import { uniqBy } from "lodash";
+import vrcode from "@ispa.io/vrcode";
 /**
  *设备信息
  */
@@ -106,25 +125,71 @@ interface CloudPSSBroadcastInfo {
 @Component({
   data() {
     return { form: this.$form.createForm(this, { name: "coordinated" }) };
-  }
+  },
+  components: { vrcode }
 })
 export default class App extends Vue {
   uniqBy = uniqBy;
   advancedSetup = true;
   form!: WrappedFormUtils;
   searchResultList: {
-    url: string | false;
+    ip: string | false;
     MAC: string;
     TTL: number;
     type: string;
+    loading: boolean;
   }[] = [];
   loading = false;
   CancelToken = axios.CancelToken;
   CancelSource = this.CancelToken.source();
   NetworkInterfaces: NodeJS.Dict<NetworkInterfaceInfo[]> = {};
 
+  modelShow = false;
+
+  tableHerderList = [
+    {
+      dataIndex: "ip",
+      key: "ip",
+      title: "ip",
+      scopedSlots: { customRender: "ip" },
+      width: 150
+    },
+    { dataIndex: "type", title: "节点类型", width: 100 },
+    {
+      dataIndex: "ip",
+      key: "operation",
+      title: "操作",
+      scopedSlots: { customRender: "operation" },
+      align: "center"
+    }
+  ];
+
+  openVpn(record: { ip: string; loading: boolean }) {
+    record.loading = true;
+    axios
+      .get(`/system/vpn`, { baseURL: `http://${record.ip}:3000` })
+      .then(() => {
+        record.loading = false;
+        this.modelShow = true;
+      })
+      .catch(() => {
+        record.loading = false;
+      });
+  }
+
+  closeVpn(record: { ip: string; loading: boolean }) {
+    record.loading = true;
+    axios
+      .delete(`/system/vpn`, { baseURL: `http://${record.ip}:3000` })
+      .then(() => {
+        record.loading = false;
+      })
+      .catch(() => {
+        record.loading = false;
+      });
+  }
+
   openBrowser(url: string) {
-    console.log(url);
     require("electron")
       .shell.openExternal(`http://${url}`)
       .catch((e: Error) => {
@@ -189,20 +254,25 @@ export default class App extends Vue {
     });
     ipcRenderer.send("getNetworkInterfaces");
     ipcRenderer.on("returnNetworkInterfaces", (event, args: ipArgs) => {
-      console.log(args);
       const ip = args.ip;
       const mac = args.macAddress;
       const TTL = 0;
       const type = args?.equipmentInfo?.serverStatus?.type;
-      if (this.searchResultList.findIndex(x => x.url === ip) != -1) {
-        const searchResult = this.searchResultList.find(x => x.url === ip);
+      if (this.searchResultList.findIndex(x => x.ip === ip) != -1) {
+        const searchResult = this.searchResultList.find(x => x.ip === ip);
         if (searchResult != null) {
           searchResult.TTL = 0;
           searchResult.MAC = mac ?? searchResult.MAC;
           searchResult.type = type ?? searchResult.type;
         }
       } else
-        this.searchResultList.push({ url: ip, MAC: mac, TTL: TTL, type: type });
+        this.searchResultList.push({
+          ip: ip,
+          MAC: mac,
+          TTL: TTL,
+          type: type,
+          loading: false
+        });
     });
     setInterval(() => {
       this.searchResultList = this.searchResultList
@@ -215,23 +285,4 @@ export default class App extends Vue {
   }
 }
 </script>
-<style>
-.ip_config /deep/ input {
-  padding: 0;
-}
-
-.ip_config /deep/ .ant-input:hover {
-  border-color: #40a9ff !important;
-  border-right-width: 1px !important;
-}
-
-.ip_config .no_border_left /deep/ .ant-input {
-  border-left-color: white;
-}
-.ant-form-item-required::before {
-  color: #00000000 !important;
-}
-.ant-list-item-meta-title {
-  margin-bottom: 0 !important ;
-}
-</style>
+<style></style>
