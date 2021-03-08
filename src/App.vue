@@ -16,19 +16,16 @@
       style="width: 100%;height: calc(100% - 60px);padding: 30px 80px"
     >
       <a-card id="a-card" style="height: 450px">
-        <a-button
-          type="primary"
-          style="margin-bottom: 10px;float: right;"
-          @click="
-            () => {
-              searchResultList = [];
-            }
-          "
-          >刷新</a-button
-        >
         <div>
-          <span style="margin-left: 32px;margin-right: 6px"
-            >已寻获服务的地址 :</span
+          <a-button
+            type="primary"
+            style="margin-bottom: 10px;    left: 89%;"
+            @click="
+              () => {
+                searchResultList = [];
+              }
+            "
+            >刷新</a-button
           >
           <a-table
             :columns="tableHerderList"
